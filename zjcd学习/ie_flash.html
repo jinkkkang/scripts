@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script type="text/javascript">
+    var ie = (navigator.appName == "Microsoft Internet Explorer");
+    var ie6 = (navigator.appVersion.indexOf("MSIE 6.0"));
+    var ie7 = (navigator.appVersion.indexOf("MSIE 7.0"));
+    var ie8 = (navigator.appVersion.indexOf("MSIE 8.0"));
+    var ie9 = (navigator.appVersion.indexOf("MSIE 9.0"));
+    var win7 = (navigator.appVersion.indexOf("Windows NT 6.1"));
+    var win8 = (navigator.appVersion.indexOf("Windows NT 6.3"));
+    var win10 = (navigator.appVersion.indexOf("Windows NT 10.0"));
+  if(ie){
+    if( win7 > 0 && ie6 > 0 ){
+      //win7提示信息
+      alert("您IE浏览器版本过低，WINDOWS 7系统 请升级至 IE 7 及以上");
+    }
+  }
+  if( win8 > 0 || win10 > 0  ){
+    if(ie6 > 0 || ie7 > 0 || ie8 > 0 || ie9 > 0);
+    //win8提示信息
+    alert("请升级IE浏览器至 IE 10及以上");
+  }
+ function flashChecker()
+{
+var hasFlash=0;　　　　//是否安装了flash
+var flashVersion=0;　　//flash版本
+
+if(document.all)
+{
+var swf = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');
+if(swf) {
+hasFlash=1;
+VSwf=swf.GetVariable("$version");
+flashVersion=parseInt(VSwf.split(" ")[1].split(",")[0]);
+}
+}else{
+if (navigator.plugins && navigator.plugins.length > 0)
+{
+var swf=navigator.plugins["Shockwave Flash"];
+if (swf)
+    {
+hasFlash=1;
+       var words = swf.description.split(" ");
+       for (var i = 0; i < words.length; ++i)
+{
+         if (isNaN(parseInt(words[i]))) continue;
+         flashVersion = parseInt(words[i]);
+}
+}
+}
+}
+return {f:hasFlash,v:flashVersion};
+}
+
+var fls=flashChecker();
+var flash_v = 17; //设置flash的最低版本
+if(fls.f){
+  if(fls.v < flash_v ){
+    alert("您当前flash版本过低请升级至 flash" +  flash_v);
+  }
+}else{
+  alert("请安装flash");
+}
+    </script>
+  </head>
+  <body>
+
+  </body>
+</html>

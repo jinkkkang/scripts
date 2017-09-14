@@ -1,0 +1,726 @@
+#!/bin/bash
+# ver.bs_rj
+
+if [ ! ${11} ]; then
+	echo 'Usage:'
+	echo '    ./gamesrv_install platid sid dbip dbuser dbpass game_port game_http_port game_prt_port game_line rsync_source_ip center_num'
+	echo '                      1      2   3    4      5      6         7              8             9         10              11'
+	echo 'example:'
+	echo '    ./gamesrv_install 1 7 10.204.174.93 root 123456 64999 8080 8081 1 192.168.41.10 2'
+	echo -e '\033[31;1m   ver.battle_client Gai!   2016-09-05 \033[0m'
+	exit;
+fi
+
+
+# 获取安装脚本所在绝对路径
+ScriptSelfPath=$(cd "$(dirname "$0")"; pwd)
+# 安装源文件存放目录：存放原始安装程序包路径
+INSTALL_SRC_DIR=$ScriptSelfPath
+# 获取脚本执行的时间
+DATETIME=`date +%Y%m%d%H%M%S`
+# 相关日志
+INSTALL_LOG=$INSTALL_SRC_DIR/rsync_install.log
+
+
+####################
+#    功能设置      #
+####################
+#跨服配置
+function bs_1()
+{
+	echo -e "\033[34;1m BS_1 \033[0m"
+	sed -i '/<\/data_client>/a\
+  <battle_client>\
+    <protocol></protocol>\
+    <session ibuffermax="131072" obuffermax="131072" close_discard="0" timeout="1800" isec="1" iseckey="" osec="1" oseckey=""></session>\
+    <connector type="tcp" address="119.145.254.196" port="64999" sndbuf="131072" rcvbuf="131072" tcp_nodelay="1" ping_tm="3000"></connector>\
+  </battle_client>' ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+}
+
+function bs_2()
+{
+	echo -e "\033[34;1m BS_2 \033[0m"
+	sed -i '/<\/data_client>/a\
+  <battle_client>\
+    <protocol></protocol>\
+    <session ibuffermax="131072" obuffermax="131072" close_discard="0" timeout="1800" isec="1" iseckey="" osec="1" oseckey=""></session>\
+    <connector type="tcp" address="121.201.100.20" port="64999" sndbuf="131072" rcvbuf="131072" tcp_nodelay="1" ping_tm="3000"></connector>\
+  </battle_client>' ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+}
+
+function bs_3()
+{
+	echo -e "\033[34;1m BS_3 \033[0m"
+	sed -i '/<\/data_client>/a\
+  <battle_client>\
+    <protocol></protocol>\
+    <session ibuffermax="131072" obuffermax="131072" close_discard="0" timeout="1800" isec="1" iseckey="" osec="1" oseckey=""></session>\
+    <connector type="tcp" address="119.145.254.196" port="64989" sndbuf="131072" rcvbuf="131072" tcp_nodelay="1" ping_tm="3000"></connector>\
+  </battle_client>' ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+}
+
+function bs_4()
+{
+	echo -e "\033[34;1m BS_4 \033[0m"
+	sed -i '/<\/data_client>/a\
+  <battle_client>\
+    <protocol></protocol>\
+    <session ibuffermax="131072" obuffermax="131072" close_discard="0" timeout="1800" isec="1" iseckey="" osec="1" oseckey=""></session>\
+    <connector type="tcp" address="121.201.100.20" port="64989" sndbuf="131072" rcvbuf="131072" tcp_nodelay="1" ping_tm="3000"></connector>\
+  </battle_client>' ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+}
+
+function add_bs()
+{
+	if [ $1 -ge 2 ]; then
+		bs_4
+	else
+		if [ 500001 -le $2 ] && [ $2 -le 500999 ]; then
+			bs_4
+		else
+			if [ 400001 -le $2 ] && [ $2 -le 400138 ]; then
+				bs_1
+			elif [ 200001 -le $2 ] && [ $2 -le 200036 ]; then
+				bs_4
+			elif [ $2 -eq 200994 ]; then
+				bs_4
+			elif [ 600001 -le $2 ] && [ $2 -le 600021 ]; then
+				bs_1
+			elif [ 400139 -le $2 ] && [ $2 -le 400999 ]; then
+				bs_1
+			elif [ 200037 -le $2 ] && [ $2 -le 200999 ]; then
+				bs_4
+			elif [ 600022 -le $2 ] && [ $2 -le 600999 ]; then
+				bs_1
+			else
+				bs_4
+			fi
+		fi
+	fi
+}
+
+# 8090特殊要求
+function cha8090()
+{
+	if [ $1 -eq 2 ]; then
+		# cquser_conf.xml
+		echo -en "\033[34;1mConfig cqserver_conf.xml for chaposturl ... \033[0m"
+		if
+			(cat ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml | grep "chaposturl=\"http://127.0.0.1/iface/postchas.php?\"") > /dev/null
+		then
+			echo -e "\033[35;1m【SKIP】\033[0m"
+		else
+			sed -i "s~chaposturl=\"\"~chaposturl=\"http://127.0.0.1/iface/postchas.php?\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+			if [ $? != 0 ]; then
+				echo -e "\033[31;1m【FAIL】\033[0m"
+			else
+				echo -e "\033[32;1m【 OK 】\033[0m"
+			fi
+		fi
+
+	fi
+}
+
+# 37特殊要求
+function cha37()
+{
+	if [ $1 -eq 4 ]; then
+		# cquser_conf.xml
+		echo -en "\033[34;1mConfig cqserver_conf.xml for chaposturl ... \033[0m"
+		if
+			(cat ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml | grep "chaposturl=\"http://127.0.0.1/iface/postchas.php?\"") > /dev/null
+		then
+			echo -e "\033[35;1m【SKIP】\033[0m"
+		else
+			sed -i "s~chaposturl=\"\"~chaposturl=\"http://127.0.0.1/iface/postchas.php?\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+			if [ $? != 0 ]; then
+				echo -e "\033[31;1m【FAIL】\033[0m"
+			else
+				echo -e "\033[32;1m【 OK 】\033[0m"
+			fi
+		fi
+
+	fi
+}
+
+####################
+
+# PATH
+NGINX_CONF_DIR=/usr/local/websrv/nginx/conf #status密码文件存放位置
+HTTP_ROOT=/home/coovanftp/ftp/apps # nginx根目录，不要带/结尾
+
+GAMESRV_SID=$2
+PLATID=$1
+
+# XXQY
+if [ $PLATID -eq 1 ]; then
+	SNUM=${GAMESRV_SID}
+else
+	SNUM=$[$GAMESRV_SID-$PLATID*100000]
+fi
+CQUSER_DBNAME=cquser_${PLATID}_s${SNUM}
+CQLOG_DBNAME=cqlog_${PLATID}_s${SNUM}
+
+
+####################
+#    密码设置      #
+####################
+
+
+# 相关密码配置
+HTTP_STATUS_PASS=sts**9At # http-basic验证: status用户的密码，用于查看nginx/php-fpm的状态信息及http的/tools目录访问
+
+
+# rsync相关配置
+RSYNCD_USER=rsync
+RSYNCD_PASS=Sdcp\#x\)\(sld123\#99^\#cMd2cc
+RSYNCD_PASS_FILE=/etc/rsyncd.pass
+
+RSYNC_USER=rsync
+RSYNC_PASS=123ccMMdp2\#0scpbmPdwqnMcc
+RSYNC_SOURCE_IP=${10}
+RSYNC_PASS_FILE=/etc/rsync.pass
+RSYNC_WH_DIR=/home/coovanftp/ftp/${GAMESRV_SID} # 不要/结尾
+
+
+DBIP=$3
+DBUSER=$4
+DBPASS=$5
+
+
+GAMESRV_GAME_PORT=$6   #游戏服务器游戏端口号
+GAMESRV_HTTP_PORT=$7    #游戏服务器配置端口号
+GAMESRV_PRT_PORT=$8     #游戏服务器守护端口号
+GAMESRV_LINE=$9            # 多少线
+
+CENTER_NUM=${11}	# 第几号center
+
+# ============ 脚本开始
+# #### 检查是否root用户执行
+
+if [ $(id -u) != "0" ]; then
+	echo '    Error: You must be root to run this script, please use root to install'
+	exit 1
+fi
+
+# #### log文件是否可写
+echo '' >> ${INSTALL_LOG}
+if [ "$?" != 0 ]; then
+	echo "    Create log file failed : ${INSTALL_LOG} ! "
+	exit 1
+fi
+# #### 检测是否占用9000端口
+if [[ ${GAMESRV_HTTP_PORT}} == '9000' ]]; then
+	echo '    Error: You must be change port 9000'
+	exit 1
+fi
+
+echo '******************' >> ${INSTALL_LOG}
+echo "${DATETIME} ${GAMESRV_SID}" >> ${INSTALL_LOG}
+echo '******************' >> ${INSTALL_LOG}
+
+
+# #### 相关密码设置
+
+# http-status
+# HTTP_STATUS_PASS
+# NGINX_CONF_DIR
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mConfig http-basic auth user( status ) password( ${HTTP_STATUS_PASS} ) ... \033[0m" | tee -a ${INSTALL_LOG}
+CREATEFILE=''
+if [ ! -f "${NGINX_CONF_DIR}/status" ]; then
+	CREATEFILE='c'
+fi
+htpasswd -b${CREATEFILE} ${NGINX_CONF_DIR}/status status ${HTTP_STATUS_PASS} > /dev/null
+if [ $? != 0 ]; then
+	echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+# rsync auth file
+# RSYNC_PASS
+# RSYNC_PASS_FILE
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mConfig rsync auth file ... \033[0m" | tee -a ${INSTALL_LOG}
+echo "${RSYNC_PASS}" > $RSYNC_PASS_FILE
+if [ $? != 0 ]; then
+	echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+chown root.root $RSYNC_PASS_FILE
+chmod 600 $RSYNC_PASS_FILE
+
+
+# rsync daemon auth file
+# RSYNCD_USER
+# RSYNCD_PASS
+# RSYNCD_PASS_FILE
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mConfig rsync daemon auth file ... \033[0m" | tee -a ${INSTALL_LOG}
+echo "${RSYNCD_USER}:${RSYNCD_PASS}" > $RSYNCD_PASS_FILE
+if [ $? != 0 ]; then
+	echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+chown root.root $RSYNCD_PASS_FILE
+chmod 600 $RSYNCD_PASS_FILE
+
+
+# #### RSYNC配置
+
+# /etc/rsyncd.conf
+# RSYNC_SOURCE_IP
+# HTTP_ROOT
+if [ ! -f /etc/rsyncd.conf ]; then
+	echo | tee -a ${INSTALL_LOG}
+	echo -en "\033[34;1mCreate rsync daemon config file ... \033[0m" | tee -a ${INSTALL_LOG}
+	cat  > /etc/rsyncd.conf <<EOF
+
+uid = root
+gid = root
+
+use chroot = no
+max connections = 10
+strict modes = yes
+pid file = /var/run/rsyncd.pid
+lock file = /var/run/rsync.lock
+log file = /var/log/rsyncd.log
+port = 873
+
+read only = no
+write only = no
+hosts allow = $RSYNC_SOURCE_IP
+hosts deny = *
+list = false
+
+auth users = $RSYNCD_USER
+secrets file = $RSYNCD_PASS_FILE
+
+[apps]
+path = ${HTTP_ROOT}
+
+EOF
+
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+		/usr/bin/rsync --daemon
+	fi
+fi
+
+# rsync for reboot
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1madd rsync daemon to /etc/rc.local ... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	cat /etc/rc.local | grep '/usr/bin/rsync --daemon' > /dev/null
+then
+	echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo '' >> /etc/rc.local
+	echo '/usr/bin/rsync --daemon' >> /etc/rc.local
+	if [ $? -eq 0 ]; then
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[31;1m【 FAIL 】 \033[0m" | tee -a ${INSTALL_LOG}
+	fi
+fi
+
+
+# /etc/rsyncd.conf for gameserver
+# GAMESRV_SID
+# RSYNC_WH_DIR
+
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mConfig rsync daemon config file for ${GAMESRV_SID} ... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	(cat /etc/rsyncd.conf | grep "\[${GAMESRV_SID}\]" ) > /dev/null
+then
+	echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	cat  >>/etc/rsyncd.conf<<EOF
+
+[${GAMESRV_SID}]
+path = $RSYNC_WH_DIR
+EOF
+	if [ $? -eq 0 ]; then
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[31;1m【 FAIL 】 \033[0m" | tee -a ${INSTALL_LOG}
+	fi
+fi
+
+
+#开放rsync的873端口
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mConfig iptables for rsync daemon port ... \033[0m" | tee -a ${INSTALL_LOG}
+
+echo '' | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1m    Config iptables for rsync in (/etc/sysconfig/iptables)... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	(cat /etc/sysconfig/iptables | grep ' 873 ' ) > /dev/null
+then
+	echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	sed -i "/-A RH-Firewall-1-INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 873 -j ACCEPT" /etc/sysconfig/iptables
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+fi
+
+
+echo -en "\033[34;1m    Config iptables for rsync in (/etc/sysconfig/system-config-firewall)... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	(cat /etc/sysconfig/system-config-firewall | grep '=873:' ) > /dev/null
+then
+	echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	sed -i '/--enabled/a\--port=873:tcp' /etc/sysconfig/system-config-firewall
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+fi
+
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1m    Restart iptables  service ... \033[0m" | tee -a ${INSTALL_LOG}
+service iptables restart > /dev/null
+if [ $? != 0 ]; then
+	echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+
+#开放rsync的843端口
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mConfig iptables for flash game port ... \033[0m" | tee -a ${INSTALL_LOG}
+
+echo '' | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1m    Config iptables for flash in (/etc/sysconfig/iptables)... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	(cat /etc/sysconfig/iptables | grep ' 843 ' ) > /dev/null
+then
+	echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	sed -i "/-A RH-Firewall-1-INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 843 -j ACCEPT" /etc/sysconfig/iptables
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+fi
+
+
+echo -en "\033[34;1m    Config iptables for flash in (/etc/sysconfig/system-config-firewall)... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	(cat /etc/sysconfig/system-config-firewall | grep '=843:' ) > /dev/null
+then
+	echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	sed -i '/--enabled/a\--port=843:tcp' /etc/sysconfig/system-config-firewall
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+fi
+
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1m    Restart iptables  service ... \033[0m" | tee -a ${INSTALL_LOG}
+service iptables restart > /dev/null
+if [ $? != 0 ]; then
+	echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+
+# #### PHP后台部署
+# RSYNC_USER
+# CENTER_NUM
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mrsync download gameserver php ... \033[0m" | tee -a ${INSTALL_LOG}
+/usr/bin/rsync -vzrtopg  --include=gmdconfig_c${CENTER_NUM}.php --exclude=gmdconfig*.php --delete --password-file=$RSYNC_PASS_FILE ${RSYNC_USER}@${RSYNC_SOURCE_IP}::apps ${HTTP_ROOT}
+if [ $? -eq 0 ]; then
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	if [ ! -f ${HTTP_ROOT}/do/gmdconfig.php ]; then
+		if [ -f ${HTTP_ROOT}/do/gmdconfig_c${CENTER_NUM}.php ]; then
+			\cp ${HTTP_ROOT}/do/gmdconfig_c${CENTER_NUM}.php ${HTTP_ROOT}/do/gmdconfig.php
+		fi
+	fi
+else
+	echo -e "\033[31;1m【 FAIL 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+# #### 数据库部署
+# DBIP
+# DBUSER
+# DBPASS
+# PLATID
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mrsync download gameserver db scripts ... \033[0m" | tee -a ${INSTALL_LOG}
+/usr/bin/rsync -vzrtopg  --include=itmcards_${PLATID}.sql --include=itmcardtp_${PLATID}.sql --exclude=itmcards_*.sql --exclude=itmcardtp_*.sql --delete --password-file=$RSYNC_PASS_FILE ${RSYNC_USER}@${RSYNC_SOURCE_IP}::gamedb ${INSTALL_SRC_DIR}/gamedb
+if [ $? -eq 0 ]; then
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	echo | tee -a ${INSTALL_LOG}
+	echo -en "\033[34;1mcreate gamedb ... \033[0m" | tee -a ${INSTALL_LOG}
+	cd ${INSTALL_SRC_DIR}/gamedb/
+	# 不同项目用不同的createdb
+	# MU
+	./createdb ${DBIP} ${DBUSER} ${DBPASS} ${PLATID} ${GAMESRV_SID}
+	if [ $? -eq 0 ]; then
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[31;1m【 FAIL 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+else
+	echo -e "\033[31;1m【 FAIL 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+
+# #### whserver服务端部署
+# CQUSER_DBNAME
+# CQLOG_DBNAME
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mrsync download gameserver ... \033[0m" | tee -a ${INSTALL_LOG}
+mkdir -p ${RSYNC_WH_DIR}/whserver
+/usr/bin/rsync -vzrtopg  --delete --password-file=$RSYNC_PASS_FILE ${RSYNC_USER}@${RSYNC_SOURCE_IP}::whserver ${RSYNC_WH_DIR}/whserver
+if [ $? -eq 0 ]; then
+	echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	echo | tee -a ${INSTALL_LOG}
+	echo -e "\033[34;1mconfig cqserver_conf.xml ... \033[0m" | tee -a ${INSTALL_LOG}
+	cd ${RSYNC_WH_DIR}/whserver
+	# timeout、越南的posturl、腾讯的tgw配置，先行配置好
+
+	# 线路数、TODO: 看是否可以正则替换
+
+	count=${GAMESRV_LINE}
+	cqxml=${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+	world_service='<world_service\ main_script='
+	xmlcount=`cat $cqxml | grep '<world_service main_script="scripts/world_service.cs" thread_count="2" exit_wait="600" tick_time="333"></world_service>' | wc -l`
+	echo "$cqxml world_service num: "$xmlcount
+	if [ $count -gt $xmlcount ];then
+	  an=$(($count - $xmlcount))
+	  echo "Need to add $an world_service"
+	  for((i=1;i<=$an;++i));
+	  do
+	    sed -i '/<outgame_service/a\    <world_service main_script="scripts/world_service.cs" thread_count="2" exit_wait="600" tick_time="333"></world_service>' $cqxml
+	  done
+	fi
+
+	if [ $count -lt $xmlcount ];then
+	  dn=$(($xmlcount - $count))
+	  echo "Need to del $dn world_service"
+	  for((i=1;i<=$dn;++i));
+	  do
+	    sed -i '/<outgame_service/{n;/    <world_service/d}' $cqxml
+	  done
+	fi
+
+	# gamedb
+	echo -en "\033[34;1m        Config gamedb in cqserver_conf.xml ...\033[0m" | tee -a ${INSTALL_LOG}
+	sed -i "s~dbname=\"[^\"]*\" host=\"[^\"]*\" user=\"[^\"]*\" passwd=\"[^\"]*\"~dbname=\"${CQUSER_DBNAME}\" host=\"${DBIP}\" user=\"${DBUSER}\" passwd=\"${DBPASS}\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+	# logdb
+	echo -en "\033[34;1m        Config logdb in cqserver_conf.xml ...\033[0m" | tee -a ${INSTALL_LOG}
+	sed -i "s~log_service thread_count=\"2\" exit_wait=\"600\" dbname=\"[^\"]*\" host=\"[^\"]*\" user=\"[^\"]*\" passwd=\"[^\"]*\"~log_service thread_count=\"2\" exit_wait=\"600\" dbname=\"${CQLOG_DBNAME}\"  host=\"${DBIP}\" user=\"${DBUSER}\" passwd=\"${DBPASS}\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+	# http_service_port
+	echo -en "\033[34;1m        Config http_service_port ${GAMESRV_HTTP_PORT} in cqserver_conf.xml ... \033[0m" | tee -a ${INSTALL_LOG}
+	sed -i "s~http_svr listen_ip=\"[^\"]*\" port=\"[^\"]*\"~http_svr listen_ip=\"127.0.0.1\" port=\"$GAMESRV_HTTP_PORT\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+	# prt_service_port
+	echo -en "\033[34;1m        Config prt_service_port ${GAMESRV_PRT_PORT} in cqserver_conf.xml ... \033[0m" | tee -a ${INSTALL_LOG}
+	sed -i "s~prt_http_svr listen_ip=\"[^\"]*\" port=\"[^\"]*\"~prt_http_svr listen_ip=\"127.0.0.1\" port=\"$GAMESRV_PRT_PORT\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+	# game_port
+	echo -en "\033[34;1m        Config game_port ${GAMESRV_GAME_PORT} in cqserver_conf.xml ...\033[0m" | tee -a ${INSTALL_LOG}
+	sed -i "/<conn_server>/,/<\/conn_server>/s~listener type=\"tcp\" address=\"0\" port=\"[^\"]*\"~listener type=\"tcp\" address=\"0\" port=\"$GAMESRV_GAME_PORT\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+	# svrid
+	echo -en "\033[34;1m        Config svrid in cqserver_conf.xml ...\033[0m" | tee -a ${INSTALL_LOG}
+	sed -i "s~svrid=\"[^\"]*\"~svrid=\"${GAMESRV_SID}\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+	fi
+
+
+	#8090
+	cha8090 $PLATID
+	cha37 $PLATID
+
+	#add bs
+	add_bs $CENTER_NUM $GAMESRV_SID
+
+	#开放gamesrv的game_port端口
+	echo | tee -a ${INSTALL_LOG}
+	echo -e "\033[34;1mConfig iptables for gamesrv's game_port ${GAMESRV_GAME_PORT} ... \033[0m" | tee -a ${INSTALL_LOG}
+	echo -en "\033[34;1m    Config iptables for gameserver game_port in (/etc/sysconfig/iptables) ... \033[0m" | tee -a ${INSTALL_LOG}
+	if
+		(cat /etc/sysconfig/iptables | grep " ${GAMESRV_GAME_PORT} -j" ) > /dev/null
+	then
+		echo -e "gamesrv's game_port is configed on iptables !\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		sed -i "/-A RH-Firewall-1-INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport ${GAMESRV_GAME_PORT} -j ACCEPT" /etc/sysconfig/iptables
+		if [ $? != 0 ]; then
+			echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+		else
+			echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+		fi
+	fi
+	echo -en "\033[34;1m    Config iptables for gameserver game_port in (/etc/sysconfig/system-config-firewall) ... \033[0m" | tee -a ${INSTALL_LOG}
+	if
+		(cat /etc/sysconfig/system-config-firewall | grep "=${GAMESRV_GAME_PORT}:" ) > /dev/null
+	then
+		echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		sed -i "/--enabled/a\--port=${GAMESRV_GAME_PORT}:tcp" /etc/sysconfig/system-config-firewall
+		if [ $? != 0 ]; then
+			echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+		else
+			echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+		fi
+	fi
+	service iptables restart >/dev/null
+
+	#gamesrv的game_port端口限制
+	echo -en "\033[34;1m    Config iptables for gameserver game_port limit ... \033[0m" | tee -a ${INSTALL_LOG}
+	if
+		(cat /etc/sysconfig/iptables | grep " ${GAMESRV_GAME_PORT} -m connlimit") > /dev/null
+	then
+		echo -e "${GAMESRV_GAME_PORT} is configed on iptables !\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		iptables -I INPUT -p tcp --dport ${GAMESRV_GAME_PORT} -m connlimit --connlimit-above 10 -j REJECT
+		if [ $? != 0 ]; then
+			echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+		else
+			echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+			service iptables save > /dev/null
+		fi
+	fi
+	# log
+	echo '' > ${RSYNC_WH_DIR}/whserver/log/whserver_all.log
+	chmod 755 ${RSYNC_WH_DIR}/whserver/log/whserver_all.log
+else
+	echo -e "\033[31;1m【 FAIL 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+# #### 定时任务添加
+echo | tee -a ${INSTALL_LOG}
+echo -en "\033[34;1mConfig crontab online user ... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	(cat /etc/crontab | grep "gmd=collect.oluser&sid=${GAMESRV_SID}") > /dev/null
+then
+	echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo "*/15 * * * * root curl 'http://127.0.0.1/idxg.php?gmd=collect.oluser&sid=${GAMESRV_SID}' > /dev/null 2>&1" >>/etc/crontab
+	if [ $? != 0 ]; then
+		echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+	else
+		echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+		service crond reload > /dev/null
+	fi
+fi
+
+# 服务器启动
+echo | tee -a ${INSTALL_LOG}
+echo -e "\033[34;1mConfig php&ngnix&memcachestart service ... \033[0m" | tee -a ${INSTALL_LOG}
+if
+	(cat /etc/rc.local | grep '/usr/bin/memcachedstart' ) > /dev/null
+then
+	echo -e "\033[35;1m    Memcachestart service is configed ! \033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -n '/usr/bin/memcachedstart' >> /etc/rc.local
+	/usr/bin/memcachedstart
+fi
+
+echo | tee -a ${INSTALL_LOG}
+chkconfig nginx --level 345 on >/dev/null
+service nginx start
+if [ $? != 0 ]; then
+	echo -e "\033[31;1m    nginx 【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -e "\033[32;1m    nginx 【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+echo | tee -a ${INSTALL_LOG}
+#chkconfig php-fpm --level 345 on >/dev/null
+#service php-fpm start
+if [ $? != 0 ]; then
+	echo -e "\033[31;1m    php-fpm 【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+else
+	echo -e "\033[32;1m    php-fpm 【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+fi
+
+#service ntpd stop > /dev/null
+#ntpdate time.windows.com
+#service ntpd start > /dev/null
+
+service sendmail stop > /dev/null
+chkconfig sendmail --level 345 off
+
+
+####################
+#  项目特殊需求    #
+####################
+
+
+
+####################
+# 搜狗平台特殊需求 #
+####################
+
+#if [ $PLATID -eq 15 ]; then
+#	# cquser_conf.xml
+#	echo | tee -a ${INSTALL_LOG}
+#	echo -en "\033[34;1mConfig cqserver_conf.xml for chaposturl ... \033[0m" | tee -a ${INSTALL_LOG}
+#	if
+#		(cat ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml | grep "chaposturl=\"http://127.0.0.1/iface/postchas.php?\"") > /dev/null
+#	then
+#		echo -e "\033[35;1m【SKIP】\033[0m" | tee -a ${INSTALL_LOG}
+#	else
+#		sed -i "s~chaposturl=\"[^\"]*\"~chaposturl=\"http://127.0.0.1/iface/postchas.php?\"~" ${RSYNC_WH_DIR}/whserver/cqserver_conf.xml
+#		if [ $? != 0 ]; then
+#			echo -e "\033[31;1m【FAIL】\033[0m" | tee -a ${INSTALL_LOG}
+#		else
+#			echo -e "\033[32;1m【 OK 】\033[0m" | tee -a ${INSTALL_LOG}
+#		fi
+#	fi
+#
+#fi
+
+
+DATETIME2=`date +%Y%m%d%H%M%S`
+echo '*****END*************' >> ${INSTALL_LOG}
+echo "${DATETIME} ${GAMESRV_SID}" >> ${INSTALL_LOG}
+echo "${DATETIME2} ${GAMESRV_SID}" >> ${INSTALL_LOG}
+echo '*****END*************' >> ${INSTALL_LOG}

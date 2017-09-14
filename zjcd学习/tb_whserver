@@ -1,0 +1,13 @@
+#!/bin/bash
+. ./conf_servers
+. ./conf_whservers
+
+if [ -n "$WHSERVERS" ]; then
+    count=${#WHSERVERS[*]}
+    for ((i=0;i<$count;i+=2))
+    do
+      echo
+      echo ... ${WHSERVERS[$i]} ...  ${WHSERVERS[($i+1)]}
+      /usr/bin/rsync -vzrtopg --delete --progress --exclude="cqserver_conf.xml" --exclude="log" --password-file=$pass ./whserver $user@${WHSERVERS[$i]}::${WHSERVERS[($i+1)]}
+   done
+fi

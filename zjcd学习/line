@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+#echo "请在同一平台中使用"
+#read -p "输入需要调整端口的sid1(较小)  " SID1
+#read -p "输入需要调整端口的sid2(较大)  " SID2
+#read -p "输入需要调整的线路数  " LINE
+SID1=$1
+SID2=$2
+LINE=$3
+if [ ! ${3} ]; then
+exit;
+fi
+BASE=/home/coovanftp/ftp
+
+cd $BASE
+FILES=($(ls | grep -v log |grep [0-9] |xargs -n1))
+for (( i = SID1; i <= SID2; i++))
+#for i in "${FILES[@]}"
+do
+  if [ x"$i" != x"." -a x"$i" != x".." ];then
+    if [ -d "$i" ];then
+      echo $i
+        count=${LINE}
+        cqxml=${BASE}/${i}/whserver/cqserver_conf.xml
+        world_service='<world_service\ main_script='
+        xmlcount=`cat $cqxml | grep '<world_service main_script="scripts/world_service.cs" thread_count="2" exit_wait="600" tick_time="333"></world_service>' | wc -l` #查看当前配置线路
+        echo "$cqxml world_service num: "$xmlcount
+        if [ $count -gt $xmlcount ];then
+          an=$(($count - $xmlcount))
+          echo "Need to add $an world_service"
+          for((f=1;f<=$an;++f));
+          do
+            sed -i '/<outgame_service/a\    <world_service main_script="scripts/world_service.cs" thread_count="2" exit_wait="600" tick_time="333"></world_service>' $cqxml
+          done
+        fi
+
+        if [ $count -lt $xmlcount ];then
+          dn=$(($xmlcount - $count))
+          echo "Need to del $dn world_service"
+          for((f=1;f<=$dn;++f));
+          do
+            sed -i '/<outgame_service/{n;/    <world_service/d}' $cqxml
+          done
+        fi
+    fi
+  fi
+done

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>复制库信息生成</title>
+  <link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
+  <script src="http://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+  <script src="http://cdn.bootcss.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+   <script type="text/javascript">
+   function fffs() {
+       var parent = document.getElementById("out");
+       var val = $("#ku").val().split("\n");
+       var num = val.length;
+       for (let i = 0; i < num; i++) {
+           var one = val[i].split(" ")[0];
+           var need = one.substr(0, one.length - 1);
+           var x = need.split('/')[4].substr(5);
+           data = 'cp -r' + ' ' + need + '   ' + x + '.tar.gz'
+           var div = document.createElement("div");
+           div.innerHTML = data;
+           parent.appendChild(div)
+       }
+
+   }
+   </script>
+  </head>
+  <body>
+  <textarea class="form-control" rows="15" id="ku" placeholder="粘贴生成的库信息，包括库大小和生成速度"></textarea>
+
+ <button type="button" name="button" onclick="fffs()">ABCDFRGHIGKLMNOPQRST</button>
+ <pre id="out"></pre>
+ <div id="o">
+
+ </div>
+
+  </body>
+</html>
