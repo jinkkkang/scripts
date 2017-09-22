@@ -2,5 +2,5 @@
 
 ##常见的语法和一些用例其中都有
 
-if U have any question,please mail to me
+if U have any question,please contact me
 jinkkang@foxmail.com
